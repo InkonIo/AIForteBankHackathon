@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fraud Detection System - ML Demo</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="logo">
+                <i class="fas fa-shield-alt"></i>
+                <span>Fraud Detection ML</span>
+            </div>
+            <nav class="nav">
+                <a href="#demo" class="nav-link">Демо</a>
+                <a href="#how" class="nav-link">Как работает</a>
+                <a href="#stats" class="nav-link">Статистика</a>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="container">
+            <h1 class="hero-title">🛡️ Система обнаружения мошенничества</h1>
+            <p class="hero-subtitle">
+                ML-модель на основе XGBoost анализирует транзакции в реальном времени
+                и блокирует подозрительные переводы
+            </p>
+            
+            <div class="hero-stats">
+                <div class="hero-stat">
+                    <div class="stat-value" id="totalTransactions">0</div>
+                    <div class="stat-label">Всего транзакций</div>
+                </div>
+                <div class="hero-stat">
+                    <div class="stat-value" id="fraudDetected">0</div>
+                    <div class="stat-label">Обнаружено мошенничеств</div>
+                </div>
+                <div class="hero-stat">
+                    <div class="stat-value" id="accuracyRate">0%</div>
+                    <div class="stat-label">Точность модели</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Demo Section -->
+    <section id="demo" class="demo-section">
+        <div class="container">
+            <h2 class="section-title">🎯 Проверка транзакции</h2>
+            
+            <div class="demo-grid">
+                <!-- Input Panel -->
+                <div class="panel">
+                    <div class="panel-header">
+                        <i class="fas fa-edit"></i>
+                        <h3>Данные транзакции</h3>
+                    </div>
+                    <div class="panel-body">
+                        <form id="transactionForm">
+                            <div class="form-group">
+                                <label for="customerId">
+                                    <i class="fas fa-user"></i> ID клиента
+                                </label>
+                                <input 
+                                    type="text" 
+                                    id="customerId" 
+                                    placeholder="Например: CUST_001" 
+                                    required
+                                    value="CUST_001"
+                                >
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="amount">
+                                    <i class="fas fa-money-bill-wave"></i> Сумма (₸)
+                                </label>
+                                <input 
+                                    type="number" 
+                                    id="amount" 
+                                    placeholder="Введите сумму" 
+                                    min="1" 
+                                    step="0.01"
+                                    required
+                                    value="50000"
+                                >
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="recipientId">
+                                    <i class="fas fa-user-friends"></i> ID получателя (опционально)
+                                </label>
+                                <input 
+                                    type="text" 
+                                    id="recipientId" 
+                                    placeholder="Например: REC_123"
+                                >
+                            </div>
+                            
+                            <button type="submit" class="btn btn-primary btn-large">
+                                <i class="fas fa-search"></i> Проверить транзакцию
+                            </button>
+                            
+                            <div style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 2px solid #e2e8f0;">
+                                <p style="font-weight: 600; margin-bottom: 1rem; color: #64748b;">
+                                    <i class="fas fa-database"></i> Или загрузите пример из БД:
+                                </p>
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
+                                    <button type="button" class="btn btn-secondary" onclick="loadCleanExample()" style="margin: 0;">
+                                        <i class="fas fa-check-circle"></i> Чистая
+                                    </button>
+                                    <button type="button" class="btn btn-secondary" onclick="loadFraudExample()" style="margin: 0; background: #fee2e2; color: #ef4444;">
+                                        <i class="fas fa-exclamation-triangle"></i> Мошенническая
+                                    </button>
+                                </div>
+                                <button type="button" class="btn btn-secondary" onclick="loadRandomExample()" style="margin-top: 0.5rem; width: 100%;">
+                                    <i class="fas fa-random"></i> Случайная
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Result Panel -->
+                <div class="panel">
+                    <div class="panel-header">
+                        <i class="fas fa-chart-line"></i>
+                        <h3>Результат анализа</h3>
+                    </div>
+                    <div class="panel-body" id="resultPanel" style="min-height: 400px; display: flex; align-items: center; justify-content: center;">
+                        <div style="text-align: center; color: #64748b;">
+                            <i class="fas fa-arrow-left" style="font-size: 3rem; margin-bottom: 1rem;"></i>
+                            <p>Заполните форму и нажмите "Проверить транзакцию"</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works -->
+    <section id="how" class="how-section">
+        <div class="container">
+            <h2 class="section-title">⚙️ Как это работает</h2>
+            
+            <div class="process-flow">
+                <div class="process-step">
+                    <div class="step-icon">
+                        <i class="fas fa-database"></i>
+                    </div>
+                    <h3>1. Сбор данных</h3>
+                    <p>Система анализирует исторические данные о транзакциях и поведении клиентов</p>
+                </div>
+                
+                <i class="fas fa-arrow-right process-arrow"></i>
+                
+                <div class="process-step">
+                    <div class="step-icon">
+                        <i class="fas fa-brain"></i>
+                    </div>
+                    <h3>2. ML анализ</h3>
+                    <p>XGBoost модель обрабатывает 35+ признаков и вычисляет вероятность мошенничества</p>
+                </div>
+                
+                <i class="fas fa-arrow-right process-arrow"></i>
+                
+                <div class="process-step">
+                    <div class="step-icon">
+                        <i class="fas fa-shield-alt"></i>
+                    </div>
+                    <h3>3. Решение</h3>
+                    <p>Система принимает решение: одобрить, проверить или заблокировать</p>
+                </div>
+            </div>
+            
+            <div class="features-grid">
+                <div class="feature-card">
+                    <i class="fas fa-bolt"></i>
+                    <h4>Быстрый анализ</h4>
+                    <p>Результат за миллисекунды</p>
+                </div>
+                
+                <div class="feature-card">
+                    <i class="fas fa-chart-line"></i>
+                    <h4>Высокая точность</h4>
+                    <p>86% accuracy на тестовой выборке</p>
+                </div>
+                
+                <div class="feature-card">
+                    <i class="fas fa-eye"></i>
+                    <h4>Объяснимость</h4>
+                    <p>Feature importance и SHAP values</p>
+                </div>
+                
+                <div class="feature-card">
+                    <i class="fas fa-sync-alt"></i>
+                    <h4>Обучение</h4>
+                    <p>Автоматическое дообучение на новых данных</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Stats Section -->
+    <section id="stats" class="stats-section">
+        <div class="container">
+            <h2 class="section-title">📊 Метрики модели</h2>
+            
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-icon">
+                        <i class="fas fa-bullseye"></i>
+                    </div>
+                    <div>
+                        <div class="metric-value">86%</div>
+                        <div class="metric-label">Accuracy</div>
+                    </div>
+                </div>
+                
+                <div class="metric-card">
+                    <div class="metric-icon">
+                        <i class="fas fa-crosshairs"></i>
+                    </div>
+                    <div>
+                        <div class="metric-value">96%</div>
+                        <div class="metric-label">Precision</div>
+                    </div>
+                </div>
+                
+                <div class="metric-card">
+                    <div class="metric-icon">
+                        <i class="fas fa-search"></i>
+                    </div>
+                    <div>
+                        <div class="metric-value">88%</div>
+                        <div class="metric-label">Recall</div>
+                    </div>
+                </div>
+                
+                <div class="metric-card">
+                    <div class="metric-icon">
+                        <i class="fas fa-medal"></i>
+                    </div>
+                    <div>
+                        <div class="metric-value">92%</div>
+                        <div class="metric-label">F1-Score</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="threshold-panel">
+                <h3><i class="fas fa-sliders-h"></i> Пороги принятия решений</h3>
+                <div class="threshold-grid">
+                    <div class="threshold-item">
+                        <span class="threshold-label">APPROVE (макс)</span>
+                        <span class="threshold-value" style="color: #10b981">30%</span>
+                    </div>
+                    <div class="threshold-item">
+                        <span class="threshold-label">VERIFY (макс)</span>
+                        <span class="threshold-value" style="color: #f59e0b">50%</span>
+                    </div>
+                    <div class="threshold-item">
+                        <span class="threshold-label">REVIEW (макс)</span>
+                        <span class="threshold-value" style="color: #ea580c">70%</span>
+                    </div>
+                    <div class="threshold-item">
+                        <span class="threshold-label">BLOCK (мин)</span>
+                        <span class="threshold-value" style="color: #ef4444">85%</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2024 Fraud Detection ML System. Powered by XGBoost & Python</p>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
